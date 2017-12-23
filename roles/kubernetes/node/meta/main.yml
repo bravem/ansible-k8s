@@ -1,0 +1,5 @@
+---
+dependencies:
+  - role: kubernetes/secrets
+    tags:
+      - k8s-secrets

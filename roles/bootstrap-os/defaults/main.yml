@@ -1,0 +1,4 @@
+---
+pip_python_coreos_modules:
+  - httplib2
+  - six

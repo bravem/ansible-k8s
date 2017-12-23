@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-scheduler
+  namespace: {{ system_namespace }}
+  labels:
+    k8s-app: kube-scheduler
+spec:
+  hostNetwork: true
+{% if kube_version | version_compare('v1.6', '>=') %}
+  dnsPolicy: ClusterFirst
+{% endif %}
+  containers:
+  - name: kube-scheduler
+    image: {{ hyperkube_image_repo }}:{{ hyperkube_image_tag }}
+    imagePullPolicy: {{ k8s_image_pull_policy }}
+    resources:
+      limits:
+        cpu: {{ kube_scheduler_cpu_limit }}
+        memory: {{ kube_scheduler_memory_limit }}
+      requests:
+        cpu: {{ kube_scheduler_cpu_requests }}
+        memory: {{ kube_scheduler_memory_requests }}
+    command:
+    - /hyperkube
+    - scheduler
+    - --leader-elect=true
+    - --kubeconfig={{ kube_config_dir }}/kube-scheduler-kubeconfig.yaml
+    - --profiling=false
+    - --v={{ kube_log_level }}
+{% if kube_feature_gates %}
+    - --feature-gates={{ kube_feature_gates|join(',') }}
+{% endif %}
+{% if scheduler_custom_flags is string %}
+    - {{ scheduler_custom_flags }}
+{% else %}
+{%   for flag in scheduler_custom_flags %}
+    - {{ flag }}
+{%   endfor %}
+{% endif %}
+    livenessProbe:
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 10251
+      initialDelaySeconds: 30
+      timeoutSeconds: 10
+    volumeMounts:
+    - mountPath: /etc/ssl
+      name: ssl-certs-host
+      readOnly: true
+    - mountPath: /etc/pki/tls
+      name: etc-pki-tls
+      readOnly: true
+    - mountPath: /etc/pki/ca-trust
+      name: etc-pki-ca-trust
+      readOnly: true
+    - mountPath: "/etc/kubernetes/ssl"
+      name: etc-kube-ssl
+      readOnly: true
+    - mountPath: "/etc/kubernetes/kube-scheduler-kubeconfig.yaml"
+      name: kubeconfig
+      readOnly: true
+  volumes:
+  - name: ssl-certs-host
+    hostPath:
+      path: /etc/ssl
+  - name: etc-pki-tls
+    hostPath:
+      path: /etc/pki/tls
+  - name: etc-pki-ca-trust
+    hostPath:
+      path: /etc/pki/ca-trust
+  - name: etc-kube-ssl
+    hostPath:
+      path: "/etc/kubernetes/ssl"
+  - name: kubeconfig
+    hostPath:
+      path: "/etc/kubernetes/kube-scheduler-kubeconfig.yaml"

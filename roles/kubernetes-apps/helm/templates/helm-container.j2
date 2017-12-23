@@ -1,0 +1,10 @@
+#!/bin/bash
+{{ docker_bin_dir }}/docker run --rm \
+  --net=host \
+  --name=helm \
+  -v /etc/ssl:/etc/ssl:ro \
+  -v {{ helm_home_dir }}:{{ helm_home_dir }}:rw \
+  -v /etc/pki/tls:/etc/pki/tls:ro \
+  -v /etc/pki/ca-trust:/etc/pki/ca-trust:ro \
+  {{ helm_image_repo }}:{{ helm_image_tag}} \
+  "$@"

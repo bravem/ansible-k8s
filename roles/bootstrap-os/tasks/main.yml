@@ -1,0 +1,56 @@
+---
+- name: 配置yum
+  file:
+      path: /etc/yum.repos.d/CentOS-Base.repo
+      state: absent
+  errors_ignore: yes
+- name:
+  copy:
+    src: "{{ item }}"
+    dest: /etc/yum.repos.d/
+  with_items:
+  - CentOS7-Base-163.repo
+- name: Check presence of fastestmirror.conf
+  stat:
+    path: /etc/yum/pluginconf.d/fastestmirror.conf
+  register: fastestmirror
+
+# fastestmirror plugin actually slows down Ansible deployments
+- name: Disable fastestmirror plugin
+  lineinfile:
+    dest: /etc/yum/pluginconf.d/fastestmirror.conf
+    regexp: "^enabled=.*"
+    line: "enabled=0"
+    state: present
+  when: fastestmirror.stat.exists
+- name: set timezone to Asia/Shanghai
+  timezone:
+    name: Asia/Shanghai
+- name: 关闭firewalld
+  systemd: 
+    name: firewalld
+    state: stopped
+    enabled: no
+# - name: Install packages requirements for bootstrap
+#   yum:
+#     name: libselinux-python
+#     state: present
+
+#- include: setup-pipelining.yml
+
+# - name: check if atomic host
+#   stat: 
+#     path: /run/ostree-booted
+#   register: ostree
+
+# - set_fact:
+#     is_atomic: "{{ ostree.stat.exists }}"
+
+- name: Gather nodes hostnames
+  setup:
+    gather_subset: '!all'
+    filter: ansible_*
+
+- name: Assign inventory name to unconfigured hostnames
+  hostname:
+    name: "{{inventory_hostname}}"

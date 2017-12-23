@@ -1,0 +1,12 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: calico-config
+  namespace: kube-system
+data:
+  etcd_endpoints: "https://192.168.1.121:2379,https://192.168.1.122:2379,https://192.168.1.123:2379"
+  etcd_ca: "/calico-secrets/ca_cert.crt"
+  etcd_cert: "/calico-secrets/cert.crt"
+  etcd_key: "/calico-secrets/key.pem"
+  cluster_type: "bgp"
+  calico_backend: "bird"

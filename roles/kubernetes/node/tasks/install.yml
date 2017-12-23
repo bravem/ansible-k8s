@@ -1,0 +1,27 @@
+---
+- name: install | Set SSL CA directories
+  set_fact:
+    ssl_ca_dirs: "[
+      '/etc/pki/tls',
+      '/etc/pki/ca-trust',
+    ]"
+  tags:
+    - facts
+
+- name: install | Copy kubelet from hyperkube container
+  command: "{{ docker_bin_dir }}/docker run --rm -v {{ bin_dir }}:/systembindir {{ hyperkube_image_repo }}:{{ hyperkube_image_tag }} /bin/cp -f /hyperkube /systembindir/kubelet"
+  register: kubelet_task_result
+  until: kubelet_task_result.rc == 0
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  tags:
+    - hyperkube
+    - upgrade
+  notify: restart kubelet
+
+- name: install | Write kubelet systemd init file
+  template:
+    src: "kubelet.{{ kubelet_deployment_type }}.service.j2"
+    dest: "/etc/systemd/system/kubelet.service"
+    backup: "yes"
+  notify: restart kubelet

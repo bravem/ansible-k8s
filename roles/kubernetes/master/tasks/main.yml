@@ -1,0 +1,40 @@
+---
+- include: pre-upgrade.yml
+  tags:
+    - k8s-pre-upgrade
+
+- include: users-file.yml
+  when: kube_basic_auth|default(true)
+
+
+- name: Copy kubectl from hyperkube container
+  command: "{{ docker_bin_dir }}/docker run --rm -v {{ bin_dir }}:/systembindir {{ hyperkube_image_repo }}:{{ hyperkube_image_tag }} /bin/cp /hyperkube /systembindir/kubectl"
+  register: kubectl_task_result
+  until: kubectl_task_result.rc == 0
+  retries: 4
+  delay: "{{ retry_stagger | random + 3 }}"
+  changed_when: false
+  tags:
+    - hyperkube
+    - kubectl
+    - upgrade
+
+- name: Install kubectl bash completion
+  shell: "{{ bin_dir }}/kubectl completion bash >/etc/bash_completion.d/kubectl.sh"
+  tags:
+    - kubectl
+
+- name: Set kubectl bash completion file
+  file:
+    path: /etc/bash_completion.d/kubectl.sh
+    owner: root
+    group: root
+    mode: 0755
+  tags:
+    - kubectl
+    - upgrade
+
+
+- name: Include static pod setup if not using kubeadm
+  include: static-pod-setup.yml
+  when: not kubeadm_enabled|bool|default(false)

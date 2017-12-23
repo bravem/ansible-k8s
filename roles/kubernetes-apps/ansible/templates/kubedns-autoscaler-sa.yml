@@ -1,0 +1,6 @@
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: cluster-proportional-autoscaler
+  namespace: {{ system_namespace }}

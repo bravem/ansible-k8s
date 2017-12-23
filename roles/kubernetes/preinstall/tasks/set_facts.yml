@@ -1,0 +1,12 @@
+---
+- name: check if atomic host
+  stat:
+    path: /run/ostree-booted
+  register: ostree
+
+
+- include: set_resolv_facts.yml
+  tags:
+    - bootstrap-os
+    - resolvconf
+    - facts

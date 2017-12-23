@@ -1,0 +1,27 @@
+{
+  "name": "cni0",
+  "cniVersion":"0.3.1",
+  "plugins":[
+    {
+          "nodename": "node1",
+          "type": "calico",
+      "etcd_endpoints": "https://192.168.1.121:2379,https://192.168.1.122:2379,https://192.168.1.123:2379",
+      "etcd_cert_file": "/etc/ssl/etcd/ssl/node-node1.pem",
+      "etcd_key_file": "/etc/ssl/etcd/ssl/node-node1-key.pem",
+      "etcd_ca_cert_file": "/etc/ssl/etcd/ssl/ca.pem",
+      "log_level": "info",
+      "ipam": {
+        "type": "calico-ipam"
+      },
+              "kubernetes": {
+        "kubeconfig": "/etc/kubernetes/node-kubeconfig.yaml"
+      }
+    },
+    {
+      "type":"portmap",
+      "capabilities":{
+        "portMappings":true
+      }
+    }
+  ]
+}

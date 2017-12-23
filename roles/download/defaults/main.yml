@@ -1,0 +1,280 @@
+---
+local_release_dir: /tmp
+
+# Used to only evaluate vars from download role
+skip_downloads: true
+
+# if this is set to true will only download files once. Doesn't work
+# on Container Linux by CoreOS unless the download_localhost is true and localhost
+# is running another OS type. Default compress level is 1 (fastest).
+download_run_once: False
+download_compress: 1
+
+# if this is set to true, uses the localhost for download_run_once mode
+# (requires docker and sudo to access docker). You may want this option for
+# local caching of docker images or for Container Linux by CoreOS cluster nodes.
+# Otherwise, uses the first node in the kube-master group to store images
+# in the download_run_once mode.
+download_localhost: False
+
+# Always pull images if set to True. Otherwise check by the repo's tag/digest.
+download_always_pull: False
+
+# Use the first kube-master if download_localhost is not set
+download_delegate: "{% if download_localhost %}localhost{% else %}{{groups['kube-master'][0]}}{% endif %}"
+
+# Versions
+kube_version: v1.8.3
+kubeadm_version: "{{ kube_version }}"
+etcd_version: v3.2.4
+# TODO(mattymo): Move calico versions to roles/network_plugins/calico/defaults
+# after migration to container download
+calico_version: "v2.5.0"
+calico_ctl_version: "v1.5.0"
+calico_cni_version: "v1.10.0"
+calico_policy_version: "v0.7.0"
+calico_rr_version: "v0.4.0"
+flannel_version: "v0.9.0"
+flannel_cni_version: "v0.3.0"
+weave_version: 2.0.5
+pod_infra_version: 3.0
+
+# Download URLs
+kubeadm_download_url: "https://storage.googleapis.com/kubernetes-release/release/{{ kubeadm_version }}/bin/linux/amd64/kubeadm"
+
+# Checksums
+kubeadm_checksum: "ea1c53b88e6e562c9c0ae4f523b56fa7f83850c4894f619a24c069e0130f417d"
+
+istio_version: "0.2.6"
+
+istioctl_download_url: "https://storage.googleapis.com/istio-release/releases/{{ istio_version }}/istioctl/istioctl-linux"
+istioctl_checksum: fd703063c540b8c0ab943f478c05ab257d88ae27224c746a27d0526ddbf7c370
+
+# Containers
+etcd_image_repo: "quay.io/coreos/etcd"
+etcd_image_tag: "{{ etcd_version }}"
+flannel_image_repo: "quay.io/coreos/flannel"
+flannel_image_tag: "{{ flannel_version }}"
+flannel_cni_image_repo: "quay.io/coreos/flannel-cni"
+flannel_cni_image_tag: "{{ flannel_cni_version }}"
+calicoctl_image_repo: "quay.io/calico/ctl"
+calicoctl_image_tag: "{{ calico_ctl_version }}"
+calico_node_image_repo: "quay.io/calico/node"
+calico_node_image_tag: "{{ calico_version }}"
+calico_cni_image_repo: "quay.io/calico/cni"
+calico_cni_image_tag: "{{ calico_cni_version }}"
+calico_policy_image_repo: "quay.io/calico/kube-policy-controller"
+calico_policy_image_tag: "{{ calico_policy_version }}"
+calico_rr_image_repo: "quay.io/calico/routereflector"
+calico_rr_image_tag: "{{ calico_rr_version }}"
+hyperkube_image_repo: "gcr.io/google_containers/hyperkube"
+hyperkube_image_tag: "{{ kube_version }}"
+pod_infra_image_repo: "gcr.io/google_containers/pause-amd64"
+pod_infra_image_tag: "{{ pod_infra_version }}"
+install_socat_image_repo: "xueshanf/install-socat"
+install_socat_image_tag: "latest"
+netcheck_version: "v1.0"
+netcheck_agent_img_repo: "quay.io/l23network/k8s-netchecker-agent"
+netcheck_agent_tag: "{{ netcheck_version }}"
+netcheck_server_img_repo: "quay.io/l23network/k8s-netchecker-server"
+netcheck_server_tag: "{{ netcheck_version }}"
+
+nginx_image_repo: nginx
+nginx_image_tag: 1.11.4-alpine
+dnsmasq_version: 2.78
+dnsmasq_image_repo: "andyshinn/dnsmasq"
+dnsmasq_image_tag: "{{ dnsmasq_version }}"
+kubedns_version: 1.14.7
+kubedns_image_repo: "gcr.io/google_containers/k8s-dns-kube-dns-amd64"
+kubedns_image_tag: "{{ kubedns_version }}"
+dnsmasq_nanny_image_repo: "gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64"
+dnsmasq_nanny_image_tag: "{{ kubedns_version }}"
+dnsmasq_sidecar_image_repo: "gcr.io/google_containers/k8s-dns-sidecar-amd64"
+dnsmasq_sidecar_image_tag: "{{ kubedns_version }}"
+kubednsautoscaler_version: 1.1.1
+kubednsautoscaler_image_repo: "gcr.io/google_containers/cluster-proportional-autoscaler-amd64"
+kubednsautoscaler_image_tag: "{{ kubednsautoscaler_version }}"
+test_image_repo: busybox
+test_image_tag: latest
+elasticsearch_version: "v2.4.1"
+elasticsearch_image_repo: "gcr.io/google_containers/elasticsearch"
+elasticsearch_image_tag: "{{ elasticsearch_version }}"
+fluentd_version: "1.22"
+fluentd_image_repo: "gcr.io/google_containers/fluentd-elasticsearch"
+fluentd_image_tag: "{{ fluentd_version }}"
+kibana_version: "v4.6.1"
+kibana_image_repo: "gcr.io/google_containers/kibana"
+kibana_image_tag: "{{ kibana_version }}"
+
+# Intentionally missing 'v' prefix. See https://github.com/lachie83/k8s-helm/issues/20
+helm_version: "2.7.0"
+helm_image_repo: "lachlanevenson/k8s-helm"
+helm_image_tag: "{{ helm_version }}"
+# Fix when helm_version is fixed
+tiller_version: "v2.7.0"
+tiller_image_repo: "gcr.io/kubernetes-helm/tiller"
+tiller_image_tag: "{{ tiller_version }}"
+
+downloads:
+  netcheck_server:
+    enabled: "{{ deploy_netchecker }}"
+    container: true
+    repo: "{{ netcheck_server_img_repo }}"
+    tag: "{{ netcheck_server_tag }}"
+    sha256: "{{ netcheck_server_digest_checksum|default(None) }}"
+  netcheck_agent:
+    enabled: "{{ deploy_netchecker }}"
+    container: true
+    repo: "{{ netcheck_agent_img_repo }}"
+    tag: "{{ netcheck_agent_tag }}"
+    sha256: "{{ netcheck_agent_digest_checksum|default(None) }}"
+  etcd:
+    enabled: true
+    container: true
+    repo: "{{ etcd_image_repo }}"
+    tag: "{{ etcd_image_tag }}"
+    sha256: "{{ etcd_digest_checksum|default(None) }}"
+  istioctl:
+    enabled: "{{ istio_enabled }}"
+    file: true
+    version: "{{ istio_version }}"
+    dest: "istio/istioctl"
+    sha256: "{{ istioctl_checksum }}"
+    source_url: "{{ istioctl_download_url }}"
+    url: "{{ istioctl_download_url }}"
+    unarchive: false
+    owner: "root"
+    mode: "0755"
+  hyperkube:
+    enabled: true
+    container: true
+    repo: "{{ hyperkube_image_repo }}"
+    tag: "{{ hyperkube_image_tag }}"
+    sha256: "{{ hyperkube_digest_checksum|default(None) }}"
+  calicoctl:
+    enabled: "{{ kube_network_plugin == 'calico' or kube_network_plugin == 'canal' }}"
+    container: true
+    repo: "{{ calicoctl_image_repo }}"
+    tag: "{{ calicoctl_image_tag }}"
+    sha256: "{{ calicoctl_digest_checksum|default(None) }}"
+  calico_node:
+    enabled: "{{ kube_network_plugin == 'calico' or kube_network_plugin == 'canal' }}"
+    container: true
+    repo: "{{ calico_node_image_repo }}"
+    tag: "{{ calico_node_image_tag }}"
+    sha256: "{{ calico_node_digest_checksum|default(None) }}"
+  calico_cni:
+    enabled: "{{ kube_network_plugin == 'calico' or kube_network_plugin == 'canal' }}"
+    container: true
+    repo: "{{ calico_cni_image_repo }}"
+    tag: "{{ calico_cni_image_tag }}"
+    sha256: "{{ calico_cni_digest_checksum|default(None) }}"
+  calico_policy:
+    enabled: "{{ enable_network_policy or kube_network_plugin == 'canal' }}"
+    container: true
+    repo: "{{ calico_policy_image_repo }}"
+    tag: "{{ calico_policy_image_tag }}"
+    sha256: "{{ calico_policy_digest_checksum|default(None) }}"
+  calico_rr:
+    enabled: "{{ peer_with_calico_rr is defined and peer_with_calico_rr}} and kube_network_plugin == 'calico'"
+    container: true
+    repo: "{{ calico_rr_image_repo }}"
+    tag: "{{ calico_rr_image_tag }}"
+    sha256: "{{ calico_rr_digest_checksum|default(None) }}"
+  pod_infra:
+    enabled: true
+    container: true
+    repo: "{{ pod_infra_image_repo }}"
+    tag: "{{ pod_infra_image_tag }}"
+    sha256: "{{ pod_infra_digest_checksum|default(None) }}"
+  install_socat:
+    enabled: "{{ ansible_os_family in ['CoreOS', 'Container Linux by CoreOS'] }}"
+    container: true
+    repo: "{{ install_socat_image_repo }}"
+    tag: "{{ install_socat_image_tag }}"
+    sha256: "{{ install_socat_digest_checksum|default(None) }}"
+  nginx:
+    enabled: true
+    container: true
+    repo: "{{ nginx_image_repo }}"
+    tag: "{{ nginx_image_tag }}"
+    sha256: "{{ nginx_digest_checksum|default(None) }}"
+  dnsmasq:
+    enabled: "{{ dns_mode == 'dnsmasq_kubedns' }}"
+    container: true
+    repo: "{{ dnsmasq_image_repo }}"
+    tag: "{{ dnsmasq_image_tag }}"
+    sha256: "{{ dnsmasq_digest_checksum|default(None) }}"
+  kubedns:
+    enabled: true
+    container: true
+    repo: "{{ kubedns_image_repo }}"
+    tag: "{{ kubedns_image_tag }}"
+    sha256: "{{ kubedns_digest_checksum|default(None) }}"
+  dnsmasq_nanny:
+    enabled: true
+    container: true
+    repo: "{{ dnsmasq_nanny_image_repo }}"
+    tag: "{{ dnsmasq_nanny_image_tag }}"
+    sha256: "{{ dnsmasq_nanny_digest_checksum|default(None) }}"
+  dnsmasq_sidecar:
+    enabled: true
+    container: true
+    repo: "{{ dnsmasq_sidecar_image_repo }}"
+    tag: "{{ dnsmasq_sidecar_image_tag }}"
+    sha256: "{{ dnsmasq_sidecar_digest_checksum|default(None) }}"
+  kubednsautoscaler:
+    enabled: true
+    container: true
+    repo: "{{ kubednsautoscaler_image_repo }}"
+    tag: "{{ kubednsautoscaler_image_tag }}"
+    sha256: "{{ kubednsautoscaler_digest_checksum|default(None) }}"
+  testbox:
+    enabled: true
+    container: true
+    repo: "{{ test_image_repo }}"
+    tag: "{{ test_image_tag }}"
+    sha256: "{{ testbox_digest_checksum|default(None) }}"
+  elasticsearch:
+    enabled: "{{ efk_enabled }}"
+    container: true
+    repo: "{{ elasticsearch_image_repo }}"
+    tag: "{{ elasticsearch_image_tag }}"
+    sha256: "{{ elasticsearch_digest_checksum|default(None) }}"
+  fluentd:
+    enabled: "{{ efk_enabled }}"
+    container: true
+    repo: "{{ fluentd_image_repo }}"
+    tag: "{{ fluentd_image_tag }}"
+    sha256: "{{ fluentd_digest_checksum|default(None) }}"
+  kibana:
+    enabled: "{{ efk_enabled }}"
+    container: true
+    repo: "{{ kibana_image_repo }}"
+    tag: "{{ kibana_image_tag }}"
+    sha256: "{{ kibana_digest_checksum|default(None) }}"
+  helm:
+    enabled: "{{ helm_enabled }}"
+    container: true
+    repo: "{{ helm_image_repo }}"
+    tag: "{{ helm_image_tag }}"
+    sha256: "{{ helm_digest_checksum|default(None) }}"
+  tiller:
+    enabled: "{{ helm_enabled }}"
+    container: true
+    repo: "{{ tiller_image_repo }}"
+    tag: "{{ tiller_image_tag }}"
+    sha256: "{{ tiller_digest_checksum|default(None) }}"
+
+download_defaults:
+  container: false
+  file: false
+  repo: None
+  tag: None
+  enabled: false
+  dest: None
+  version: None
+  url: None
+  unarchive: false
+  owner: kube
+  mode: None

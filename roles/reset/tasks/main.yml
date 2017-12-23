@@ -1,0 +1,163 @@
+---
+
+- name: reset | stop services
+  service:
+    name: "{{ item }}"
+    state: stopped
+  with_items:
+    - kubelet
+    - vault
+    - etcd
+  failed_when: false
+  tags:
+    - services
+
+- name: reset | remove services
+  file:
+    path: "/etc/systemd/system/{{ item }}.service"
+    state: absent
+  with_items:
+    - kubelet
+    - etcd
+    - vault
+    - calico-node
+  register: services_removed
+  tags:
+    - services
+
+- name: reset | remove docker dropins
+  file:
+    path: "/etc/systemd/system/docker.service.d/{{ item }}"
+    state: absent
+  with_items:
+    - docker-dns.conf
+    - docker-options.conf
+  register: docker_dropins_removed
+  tags:
+    - docker
+
+- name: reset | systemctl daemon-reload
+  command: systemctl daemon-reload
+  when: services_removed.changed or docker_dropins_removed.changed
+
+- name: reset | remove all containers
+  shell: "{{ docker_bin_dir }}/docker ps -aq | xargs -r docker rm -fv"
+  register: remove_all_containers
+  retries: 4
+  until: remove_all_containers.rc == 0
+  delay: 5
+  tags:
+    - docker
+
+- name: reset | restart docker if needed
+  service:
+    name: docker
+    state: restarted
+  when: docker_dropins_removed.changed
+  tags:
+    - docker
+
+- name: reset | gather mounted kubelet dirs
+  shell: mount | grep /var/lib/kubelet | awk '{print $3}' | tac
+  check_mode: no
+  register: mounted_dirs
+  tags:
+    - mounts
+
+- name: reset | unmount kubelet dirs
+  command: umount {{item}}
+  with_items: '{{ mounted_dirs.stdout_lines }}'
+  tags:
+    - mounts
+
+- name: flush iptables
+  iptables:
+    flush: yes
+  when: flush_iptables|bool
+  tags:
+    - iptables
+
+- name: reset | delete some files and directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{kube_config_dir}}"
+    - /var/lib/kubelet
+    - /root/.kube
+    - "{{ etcd_data_dir }}"
+    - /etc/ssl/etcd
+    - /var/log/calico
+    - /etc/cni
+    - /etc/nginx
+    - /etc/dnsmasq.d
+    - /etc/dnsmasq.conf
+    - /etc/dnsmasq.d-available
+    - /etc/etcd.env
+    - /etc/calico
+    - /etc/weave.env
+    - /opt/cni
+    - /etc/dhcp/dhclient.d/zdnsupdate.sh
+    - /etc/dhcp/dhclient-exit-hooks.d/zdnsupdate
+    - /run/flannel
+    - /etc/flannel
+    - /run/kubernetes
+    - /usr/local/share/ca-certificates/etcd-ca.crt
+    - /usr/local/share/ca-certificates/kube-ca.crt
+    - /usr/local/share/ca-certificates/vault-ca.crt
+    - /etc/ssl/certs/etcd-ca.pem
+    - /etc/ssl/certs/kube-ca.pem
+    - /etc/ssl/certs/vault-ca.crt
+    - /etc/pki/ca-trust/source/anchors/etcd-ca.crt
+    - /etc/pki/ca-trust/source/anchors/kube-ca.crt
+    - /etc/pki/ca-trust/source/anchors/vault-ca.crt
+    - /etc/vault
+    - /var/log/pods/
+    - "{{ bin_dir }}/kubelet"
+    - "{{ bin_dir }}/etcd-scripts"
+    - "{{ bin_dir }}/etcd"
+    - "{{ bin_dir }}/etcdctl"
+    - "{{ bin_dir }}/kubernetes-scripts"
+    - "{{ bin_dir }}/kubectl"
+    - "{{ bin_dir }}/helm"
+    - "{{ bin_dir }}/calicoctl"
+  tags:
+    - files
+
+- name: reset | remove dns settings from dhclient.conf
+  blockinfile:
+    dest: "{{ item }}"
+    state: absent
+    follow: yes
+    marker: "# Ansible entries {mark}"
+  failed_when: false
+  with_items:
+    - /etc/dhclient.conf
+    - /etc/dhcp/dhclient.conf
+  tags:
+    - files
+    - dns
+
+- name: reset | remove host entries from /etc/hosts
+  blockinfile:
+    dest: "/etc/hosts"
+    state: absent
+    follow: yes
+    marker: "# Ansible inventory hosts {mark}"
+  tags:
+    - files
+    - dns
+
+- name: reset | Restart network
+  service:
+    name: >-
+      {% if ansible_os_family == "RedHat" -%}
+      network
+      {%- elif ansible_os_family == "Debian" -%}
+      networking
+      {%- endif %}
+    state: restarted
+  when: ansible_os_family not in ["CoreOS", "Container Linux by CoreOS"]
+  tags:
+    - services
+    - network

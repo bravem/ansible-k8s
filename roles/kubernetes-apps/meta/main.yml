@@ -1,0 +1,35 @@
+---
+dependencies:
+  - role: kubernetes-apps/ansible
+    tags:
+      - apps
+
+  - role: kubernetes-apps/kpm
+    tags:
+      - apps
+      - kpm
+
+  - role: kubernetes-apps/efk
+    when: efk_enabled
+    tags:
+      - apps
+      - efk
+
+  - role: kubernetes-apps/helm
+    when: helm_enabled
+    tags:
+      - apps
+      - helm
+  - role: kubernetes-apps/local_volume_provisioner
+    when: local_volumes_enabled
+    tags:
+      - apps
+      - local_volume_provisioner
+      - storage
+  # istio role should be last because it takes a long time to initialize and
+  # will cause timeouts trying to start other addons.
+  - role: kubernetes-apps/istio
+    when: istio_enabled
+    tags:
+      - apps
+      - istio
